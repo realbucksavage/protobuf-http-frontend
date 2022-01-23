@@ -1,23 +1,36 @@
-import logo from './logo.svg';
-import './App.css';
+import axios from "axios";
+import { useState } from "react";
+import reportWebVitals from "./reportWebVitals";
+
+const messages = require("./proto/greeter_pb")
 
 function App() {
+
+  const [greeting, setGreeting] = useState("");
+
+  const transformResponse = (data) => {
+    return messages.GreeterResposne.deserializeBinary(data);
+  }
+
+  const fetchGreeting = (name) => {
+    const req = new messages.GreeterRequest();
+    req.setName(name);
+
+    axios.post("http://localhost:8080/greeter", req.serializeBinary(), {transformResponse, responseType: "arraybuffer", headers: {"content-type": "application/x-protobuf"}})
+      .then(data => {
+        setGreeting(data.data.getGreeting())
+      })
+      .catch(err => console.error(err))
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h1>Greeter Service</h1>
+      <form name="greeterform" onSubmit={(e) => { e.preventDefault(); reportWebVitals(fetchGreeting(document.greeterform.name.value)) }}>
+        <p>{greeting}</p>
+        <input type="text" name="name"></input>
+        <input type="submit"></input>
+      </form>
     </div>
   );
 }
